@@ -1,6 +1,6 @@
 # DNA Sequence Analyzer using DFA
 
-## Theory of Computation Perspective: Finite Automata in Bioinformatics
+## Finite Automata in Bioinformatics
 
 This project demonstrates the application of **Deterministic Finite Automata (DFA)** from Theory of Computation in bioinformatics, specifically for DNA sequence analysis. DFA provides efficient exact pattern matching with guaranteed linear-time performance, making it ideal for searching biological motifs in genomic data.
 
@@ -38,8 +38,8 @@ This project demonstrates the application of **Deterministic Finite Automata (DF
 ### Setup
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd toc-dna
+git clone https://github.com/Xylecrack/dna-analyzer.git
+cd dna-analyzer
 
 # Install dependencies (ensure pip, flask, networkx are installed)
 pip install flask networkx
