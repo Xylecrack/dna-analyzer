@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA Sequence Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/dfa-visualization.css') }}" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        .sequence-highlight {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 0.25rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .match-highlight {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        .state-diagram {
+            min-height: 300px;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+        }
+        .loading {
+            display: none;
+        }
+        .result-section {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-dna"></i> DNA Sequence Analyzer
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-search"></i> Sequence Analysis
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="analysisForm">
+                            <div class="mb-3">
+                                <label for="inputType" class="form-label">Input Type</label>
+                                <select class="form-select" id="inputType" name="input_type">
+                                    <option value="sequence">DNA Sequence</option>
+                                    <option value="fasta">FASTA Format</option>
+                                    <option value="file">Upload File</option>
+                                </select>
+                            </div>
+
+                            <!-- Sequence Text Input -->
+                            <div class="mb-3" id="sequenceInput">
+                                <label for="sequence" class="form-label">DNA Sequence</label>
+                                <textarea
+                                    class="form-control"
+                                    id="sequence"
+                                    name="sequence"
+                                    rows="6"
+                                    placeholder="Enter your DNA sequence here (A, T, C, G, N only) or FASTA format"
+                                ></textarea>
+                                <div class="form-text">
+                                    Enter DNA sequence using A, T, C, G, N characters only.
+                                    For FASTA format, start each sequence with >sequence_name
+                                </div>
+                            </div>
+
+                            <!-- File Upload Input -->
+                            <div class="mb-3" id="fileInput" style="display: none;">
+                                <label for="file" class="form-label">Upload Sequence File</label>
+                                <input type="file" class="form-control" id="file" name="file" accept=".txt,.fasta,.fa,.gb">
+                                <div class="form-text">
+                                    Supported formats: .txt, .fasta, .fa, .gb (max 500MB)
+                                </div>
+                                <div id="fileInfo" class="mt-2" style="display: none;">
+                                    <small class="text-muted">
+                                        File: <span id="fileName"></span> |
+                                        Size: <span id="fileSize"></span>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Large File Options -->
+                            <div class="mb-3" id="largeFileOptions" style="display: none;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="useLargeProcessor" name="use_large_processor">
+                                    <label class="form-check-label" for="useLargeProcessor">
+                                        Force streaming processing for large files
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="statsOnly" name="stats_only">
+                                    <label class="form-check-label" for="statsOnly">
+                                        Calculate statistics only (faster for very large files)
+                                    </label>
+                                </div>
+                                <div class="form-text">
+                                    Streaming processing is automatically enabled for files >10MB
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Predefined Patterns</label>
+                                <div class="row">
+                                    {% for pattern_name, pattern_seq in patterns.items() %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   id="{{ pattern_name }}" name="patterns" value="{{ pattern_name }}">
+                                            <label class="form-check-label" for="{{ pattern_name }}">
+                                                {{ pattern_name.replace('_', ' ').title() }} ({{ pattern_seq }})
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="customPatterns" class="form-label">Custom Patterns</label>
+                                <textarea
+                                    class="form-control"
+                                    id="customPatterns"
+                                    name="custom_patterns"
+                                    rows="3"
+                                    placeholder="Enter custom patterns, one per line:&#10;name:sequence&#10;e.g.,&#10;my_motif:ATCG&#10;promoter:TATA"
+                                ></textarea>
+                                <div class="form-text">
+                                    Format: pattern_name:sequence (one per line)
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="findOrfs" name="find_orfs">
+                                    <label class="form-check-label" for="findOrfs">
+                                        Find Open Reading Frames (ORFs)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" id="analyzeBtn">
+                                <i class="fas fa-play"></i> Analyze Sequence
+                            </button>
+
+                            <div class="loading mt-3" id="loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span class="ms-2">Analyzing sequence...</span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-info-circle"></i> About
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            This tool uses <strong>Deterministic Finite Automata (DFA)</strong>
+                            to efficiently search for biological patterns in DNA sequences.
+                        </p>
+                        <p class="mb-2">
+                            <strong>Features:</strong>
+                        </p>
+                        <ul class="mb-2 small">
+                            <li>Exact pattern matching</li>
+                            <li>Sequence statistics</li>
+                            <li>Open Reading Frame detection</li>
+                            <li>State diagram visualization</li>
+                            <li>FASTA format support</li>
+                        </ul>
+                        <p class="mb-0 small text-muted">
+                            Built with Python, Flask, and Bootstrap
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-question-circle"></i> Help
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small mb-2">
+                            <strong>Sequence Input:</strong> Enter DNA sequence or FASTA format.
+                        </p>
+                        <p class="small mb-2">
+                            <strong>Patterns:</strong> Select predefined patterns or define custom ones.
+                        </p>
+                        <p class="small mb-0">
+                            <strong>ORFs:</strong> Detects potential protein-coding regions.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="row mt-4 result-section" id="resultsSection">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar"></i> Analysis Results
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="resultsContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- State Diagram Modal -->
+    <div class="modal fade" id="stateDiagramModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">State Diagram</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="stateDiagram" class="state-diagram"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dfa-visualization.js') }}"></script>
+    <script>
+        // Input type switching
+        document.getElementById('inputType').addEventListener('change', function() {
+            const inputType = this.value;
+            const sequenceInput = document.getElementById('sequenceInput');
+            const fileInput = document.getElementById('fileInput');
+            const largeFileOptions = document.getElementById('largeFileOptions');
+
+            if (inputType === 'file') {
+                sequenceInput.style.display = 'none';
+                fileInput.style.display = 'block';
+                largeFileOptions.style.display = 'block';
+            } else {
+                sequenceInput.style.display = 'block';
+                fileInput.style.display = 'none';
+                largeFileOptions.style.display = 'none';
+            }
+        });
+
+        // File upload handling
+        document.getElementById('file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const fileInfo = document.getElementById('fileInfo');
+                const fileName = document.getElementById('fileName');
+                const fileSize = document.getElementById('fileSize');
+
+                fileName.textContent = file.name;
+                fileSize.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+                fileInfo.style.display = 'block';
+            }
+        });
+
+        document.getElementById('analysisForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const inputType = document.getElementById('inputType').value;
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const loading = document.getElementById('loading');
+            const resultsSection = document.getElementById('resultsSection');
+
+            // Show loading
+            analyzeBtn.disabled = true;
+            loading.style.display = 'block';
+            resultsSection.style.display = 'none';
+
+            try {
+                let response;
+
+                if (inputType === 'file') {
+                    // Handle file upload first
+                    const fileFormData = new FormData();
+                    const fileInput = document.getElementById('file');
+                    if (fileInput.files[0]) {
+                        fileFormData.append('file', fileInput.files[0]);
+
+                        const uploadResponse = await fetch('/upload', {
+                            method: 'POST',
+                            body: fileFormData
+                        });
+
+                        const uploadData = await uploadResponse.json();
+                        if (!uploadData.success) {
+                            throw new Error('Upload failed: ' + uploadData.error);
+                        }
+
+                        // Add uploaded file path to form data
+                        formData.append('uploaded_file', uploadData.file_path);
+                    }
+                }
+
+                // Analyze the sequence/file
+                response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data.results);
+                    resultsSection.style.display = 'block';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                analyzeBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        function displayResults(results) {
+            const container = document.getElementById('resultsContent');
+            container.innerHTML = '';
+
+            results.forEach((result, index) => {
+                if (results.length > 1) {
+                    container.innerHTML += `<h4>Sequence ${index + 1}: ${result.sequence_info.name}</h4>`;
+                }
+
+                // Sequence Info
+                container.innerHTML += `
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Sequence Information</h5>
+                            <table class="table table-sm">
+                                <tr><td><strong>Length:</strong></td><td>${result.sequence_info.length} bp</td></tr>
+                                <tr><td><strong>GC Content:</strong></td><td>${result.sequence_info.gc_content}%</td></tr>
+                                <tr><td><strong>A:</strong></td><td>${result.sequence_info.composition.A}%</td></tr>
+                                <tr><td><strong>T:</strong></td><td>${result.sequence_info.composition.T}%</td></tr>
+                                <tr><td><strong>C:</strong></td><td>${result.sequence_info.composition.C}%</td></tr>
+                                <tr><td><strong>G:</strong></td><td>${result.sequence_info.composition.G}%</td></tr>
+                                <tr><td><strong>N:</strong></td><td>${result.sequence_info.composition.N}%</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                // Pattern Matches
+                if (Object.keys(result.pattern_matches).length > 0) {
+                    container.innerHTML += '<h5>Pattern Matches</h5>';
+                    Object.entries(result.pattern_matches).forEach(([patternName, matchInfo]) => {
+                        if (matchInfo.error) {
+                            container.innerHTML += `
+                                <div class="alert alert-danger">
+                                    <strong>${patternName}:</strong> ${matchInfo.error}
+                                </div>
+                            `;
+                        } else {
+                            container.innerHTML += `
+                                <div class="mb-3">
+                                    <strong>${patternName} (${matchInfo.pattern}):</strong>
+                                    ${matchInfo.count} matches found
+                                    ${matchInfo.matches.length > 0 ? ` at positions: ${matchInfo.matches.slice(0, 10).join(', ')}${matchInfo.matches.length > 10 ? '...' : ''}` : ''}
+                                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="showStateDiagram('${patternName}', '${matchInfo.pattern}')">
+                                        <i class="fas fa-project-diagram"></i> View DFA
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    });
+                }
+
+                // ORFs
+                console.log('ORFs in result:', result.orfs);
+                if (result.orfs && result.orfs.length > 0) {
+                    container.innerHTML += '<h5>Open Reading Frames</h5>';
+                    container.innerHTML += `<p>Found ${result.orfs.length} ORFs:</p>`;
+                    result.orfs.forEach((orf, i) => {
+                        container.innerHTML += `
+                            <div class="mb-2">
+                                <strong>ORF ${i + 1}:</strong>
+                                ${orf.start}-${orf.end} (frame ${orf.frame}),
+                                length ${orf.length}bp,
+                                protein ${orf.protein_length}aa<br>
+                                <small class="text-muted">Protein: ${orf.protein_sequence}</small>
+                            </div>
+                        `;
+                    });
+                } else {
+                    container.innerHTML += '<h5>Open Reading Frames</h5>';
+                    container.innerHTML += '<p>No ORFs found in this sequence.</p>';
+                }
+            });
+        }
+
+        function showStateDiagram(patternName, patternSequence) {
+            // Determine if this is a predefined or custom pattern
+            const modal = new bootstrap.Modal(document.getElementById('stateDiagramModal'));
+            const diagramDiv = document.getElementById('stateDiagram');
+
+            diagramDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading state diagram...</div>';
+
+            // First try predefined patterns
+            fetch(`/state_diagram/${patternName}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderStateDiagram(data.diagram);
+                } else {
+                    // If predefined fails, try custom pattern
+                    return fetch('/custom_state_diagram', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ pattern: patternSequence })
+                    });
+                }
+            })
+            .then(response => {
+                if (response && !response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response ? response.json() : null;
+            })
+            .then(data => {
+                if (data) {
+                    if (data.success) {
+                        renderStateDiagram(data.diagram);
+                    } else {
+                        diagramDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    }
+                }
+            })
+            .catch(error => {
+                diagramDiv.innerHTML = `<div class="alert alert-danger">Error loading diagram: ${error.message}</div>`;
+            });
+
+            modal.show();
+        }
+
+        // renderStateDiagram is now implemented in dfa-visualization.js
+    </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+/* DFA State Diagram Visualization Styles */
+
+.dfa-visualization-container {
+    position: relative;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.dfa-node {
+    cursor: grab;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dfa-node:hover {
+    stroke-width: 5px !important;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)) !important;
+}
+
+.dfa-node:active {
+    cursor: grabbing;
+}
+
+.dfa-link {
+    stroke: #495057;
+    stroke-width: 2.5;
+    fill: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dfa-link:hover {
+    stroke-width: 4px;
+    cursor: pointer;
+}
+
+.edge-label {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    fill: #212529;
+    text-anchor: middle;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    paint-order: stroke fill;
+    stroke: rgba(255, 255, 255, 0.9);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+}
+
+.node-label {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-weight: bold;
+    font-size: 16px;
+    fill: white;
+    text-anchor: middle;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.dfa-controls {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.dfa-controls .form-label {
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.dfa-controls .form-control {
+    border-radius: 6px;
+    border: 2px solid #dee2e6;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.dfa-controls .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+}
+
+.dfa-controls .btn {
+    border-radius: 6px;
+    font-weight: 600;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+}
+
+.dfa-controls .btn-outline-primary {
+    border-color: #007bff;
+    color: #007bff;
+    border-width: 2px;
+}
+
+.dfa-controls .btn-outline-primary:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+}
+
+.dfa-zoom-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.dfa-zoom-controls .btn {
+    padding: 6px 10px;
+    font-size: 16px;
+    min-width: 36px;
+    font-weight: 600;
+    border: 2px solid #6c757d;
+    color: #495057;
+    background: white;
+}
+
+.dfa-zoom-controls .btn:hover {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.dfa-zoom-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.dfa-zoom-controls .btn {
+    padding: 6px 10px;
+    font-size: 16px;
+    min-width: 36px;
+    font-weight: 600;
+    border: 2px solid #6c757d;
+    color: #495057;
+    background: white;
+}
+
+.dfa-zoom-controls .btn:hover {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.dfa-legend {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 249, 250, 0.98) 100%);
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.08);
+}
+
+.dfa-legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.dfa-legend-item:last-child {
+    margin-bottom: 0;
+}
+
+.dfa-legend-color {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    margin-right: 10px;
+    border: 2px solid rgba(255,255,255,0.9);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+}
+
+.dfa-legend-text {
+    font-weight: 600;
+    color: #343a40;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dfa-visualization-container {
+        height: 450px !important;
+    }
+
+    .dfa-controls .row > div {
+        margin-bottom: 12px;
+    }
+
+    .dfa-controls .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+
+    .dfa-zoom-controls {
+        align-self: flex-end;
+    }
+
+    .dfa-legend {
+        font-size: 12px;
+    }
+
+    .dfa-legend-item {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    .edge-label {
+        font-size: 12px;
+    }
+
+    .node-label {
+        font-size: 14px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .dfa-visualization-container {
+        height: 650px !important;
+    }
+}
+
+/* Loading state */
+.dfa-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    color: #6c757d;
+}
+
+.dfa-loading i {
+    font-size: 2rem;
+    margin-right: 10px;
+}
+
+.dfa-loading span {
+    font-size: 1.1rem;
+}
+
+/* Error state */
+.dfa-error {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    color: #dc3545;
+    text-align: center;
+}
+
+.dfa-error i {
+    font-size: 3rem;
+    margin-bottom: 10px;
+}
+
+.dfa-error .alert {
+    max-width: 400px;
+    margin: 0;
+}
+
+/* Highlighted path styles - more obvious */
+.dfa-node.highlighted {
+    stroke: #ff6b35 !important;
+    stroke-width: 6px !important;
+    filter: drop-shadow(0 4px 12px rgba(255,107,53,0.5)) !important;
+}
+
+.dfa-link.highlighted {
+    stroke: #ff6b35 !important;
+    stroke-width: 4.5px !important;
+    opacity: 1 !important;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Path feedback message styling */
+#path-feedback {
+    animation: slideDown 0.4s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -10px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+/* Improve SVG rendering quality */
+svg {
+    shape-rendering: geometricPrecision;
+}
+
+.dfa-node, .dfa-link {
+    vector-effect: non-scaling-stroke;
+}
